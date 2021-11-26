@@ -153,7 +153,7 @@ public class OpencvCamera extends Activity implements CameraBridgeViewBase.CvCam
 
 //        mRGBAT = inputFrame.gray();
 
-        if (view3.zoom==true) {
+        if (view3.zoom) {
             Point roiRec = view3.zoomInRec;
             int roiWidth = (int) view3.zoomInWidth;
             int roiHeight = (int) view3.zoomInHeight;
@@ -163,9 +163,6 @@ public class OpencvCamera extends Activity implements CameraBridgeViewBase.CvCam
 
             mRGBA_roi = cvfun.img_proc(mRGBA_roi);
             mRGBA_roi.copyTo(new Mat(mRGBA, roi));
-        }
-        else {
-            mRGBA = cvfun.img_proc(mRGBA);
         }
 
         return mRGBA;
