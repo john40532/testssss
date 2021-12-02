@@ -31,19 +31,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Button open_camera;
-
+    private Button load_video;
     private ImageView mImageView;
 
 
     private void initViews()
     {
         open_camera = findViewById(R.id.open_camera);
+        load_video = findViewById(R.id.loadVideo);
 //        mImageView = findViewById(R.id.imageView);
     }
 
     private void setListensers()
     {
         open_camera.setOnClickListener(turnOnCamera);
+        load_video.setOnClickListener(loadSampleVideo);
 //        mImageView.setOnTouchListener(touchImage);
     }
 
@@ -62,6 +64,14 @@ public class MainActivity extends AppCompatActivity {
                 open_camera.setText("camera");
             }
             startActivity(new Intent(MainActivity.this, OpencvCamera.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        }
+    };
+
+    private View.OnClickListener loadSampleVideo = new View.OnClickListener() {
+
+        @Override
+        public void onClick(View view) {
+            startActivity(new Intent(MainActivity.this, PlayVideo.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
         }
     };
 

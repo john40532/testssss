@@ -102,7 +102,9 @@ public class DrawView extends View {
             case MotionEvent.ACTION_POINTER_UP:
                 // 手指放開事件
                 mode = NONE;
-
+                if (zoomInWidth>20 && zoomInHeight>20){
+                    zoom = true;
+                }
                 break;
             case MotionEvent.ACTION_MOVE:
                 Log.d("touch", "ACTION_MOVE");
@@ -111,9 +113,7 @@ public class DrawView extends View {
                 if (mode == DRAG) {
                     // 是一個手指拖動
                     currentPoint.set(event.getX(), event.getY());
-                    if (zoomInWidth>20 && zoomInHeight>20){
-                        zoom = true;
-                    }
+
                 } else if (mode == ZOOM) {
                     // 兩個手指滑動
 //                    float newDist = distance(event);

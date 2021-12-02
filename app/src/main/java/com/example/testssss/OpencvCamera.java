@@ -26,6 +26,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.core.Point;
 import org.opencv.core.Range;
 import org.opencv.core.Rect;
+import org.opencv.imgproc.Imgproc;
 
 public class OpencvCamera extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
     private static final String TAG = "MainActivity";
@@ -153,6 +154,7 @@ public class OpencvCamera extends Activity implements CameraBridgeViewBase.CvCam
 
 //        mRGBAT = inputFrame.gray();
 
+        Imgproc.cvtColor(mRGBA, mRGBA, Imgproc.COLOR_RGB2BGR);
         if (view3.zoom) {
             Point roiRec = view3.zoomInRec;
             int roiWidth = (int) view3.zoomInWidth;
@@ -163,6 +165,9 @@ public class OpencvCamera extends Activity implements CameraBridgeViewBase.CvCam
 
             mRGBA_roi = cvfun.img_proc(mRGBA_roi);
             mRGBA_roi.copyTo(new Mat(mRGBA, roi));
+        }
+        else {
+            cvfun.reset();
         }
 
         return mRGBA;

@@ -6,6 +6,7 @@ import org.opencv.BuildConfig;
 import org.opencv.R;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -426,6 +427,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         boolean bmpValid = true;
         if (modified != null) {
             try {
+                Imgproc.cvtColor(modified, modified, Imgproc.COLOR_BGR2RGB);
                 Utils.matToBitmap(modified, mCacheBitmap);
             } catch(Exception e) {
                 Log.e(TAG, "Mat type: " + modified);

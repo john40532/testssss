@@ -3,18 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:gravity="center|bottom"
+    android:gravity="bottom|center"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="623dp">
 
         <ImageView
             android:id="@+id/imageView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="603dp"
             android:scaleType="centerInside"
             android:src="@drawable/archery_target" />
 
@@ -22,11 +22,15 @@
     </FrameLayout>
 
     <Button
+        android:id="@+id/loadVideo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Load Video" />
+
+    <Button
         android:id="@+id/open_camera"
-        android:layout_width="wrap_content"
-        android:layout_height="50dp"
-        android:background="#FFFFFF"
-        android:text="Camera"
-        app:strokeColor="#FFFFFF"></Button>
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Camera"></Button>
 
 </LinearLayout>
