@@ -167,6 +167,7 @@ public class PlayVideo extends AppCompatActivity {
         Mat mFrame = new Mat();
         if (vc.read(mFrame)) {
             frame_number++;
+            Imgproc.cvtColor(mFrame, mFrame, Imgproc.COLOR_RGB2BGR);
             mFrame = cvfun.img_proc(mFrame);
             Imgproc.putText(mFrame, String.valueOf(frame_number), new Point(30,150), Imgproc.FONT_HERSHEY_COMPLEX, 2, new Scalar(0, 255, 255), 1);
             Imgproc.cvtColor(mFrame, mFrame, Imgproc.COLOR_BGR2RGB);
