@@ -43,14 +43,16 @@ import java.util.Random;
 public class Cvfun {
     private enum ColorMask {GOLDEN, ORANGE, BLUE, BLACK, WHITE}
     private Random rng = new Random(12345);
-    private BackgroundSubtractorMOG2 mog = Video.createBackgroundSubtractorMOG2(300, 15, false);
+    private BackgroundSubtractorMOG2 mog = Video.createBackgroundSubtractorMOG2(500, 20, false);
     private BackgroundSubtractorKNN mogKNN = Video.createBackgroundSubtractorKNN();
     //    private Mat foreground = new Mat();
     public Point arrow_pos = new Point();
-    private List<Point> arrow_candidate = new ArrayList<>();
+    private ArrayList<ClusterPoints> arrow_candidate = new ArrayList<>();
+    private ArrayList<Integer> arrow_candidate_number = new ArrayList<>();
     int i = 10;
     private Mat prev_frame = new Mat();
     private boolean frame_initilized = false;
+    private DBScan dbscan = new DBScan(5, 20);
 
     public void reset(){
         frame_initilized = false;
@@ -63,59 +65,52 @@ public class Cvfun {
         arrow_mask = get_arrow_mask(mat, roi_mask);
 
         find_arrow(arrow_mask);
-//
-//        if(this.arrow_pos != null) {
-//            this.arrow_candidate.add(this.arrow_pos);
-//            if(this.arrow_candidate.size()>20) {
-//                this.arrow_candidate.remove(0);
-//            }
-//            if(this.arrow_candidate.size() > 2){
-//                Mat mp = Converters.vector_Point_to_Mat(this.arrow_candidate);
-//                mp.convertTo(mp, CvType.CV_32F);
-//
-//                Mat labels = new Mat();
-//                TermCriteria criteria = new TermCriteria(TermCriteria.COUNT, 100, 1);
-//                Mat centers = new Mat();
-//                kmeans(mp, 2, labels, criteria, 1, Core.KMEANS_PP_CENTERS, centers);
-//                Point c;
-//                c = new Point(centers.get(0,0)[0], centers.get(0,1)[0]);
-//                Imgproc.circle(mat, c, 15, new Scalar(255, 0, 255), -1);
-//                c = new Point(centers.get(1,0)[0], centers.get(1,1)[0]);
-//                Imgproc.circle(mat, c, 15, new Scalar(255, 0, 255), -1);
-//
-//            }
-//        }
+
+        for (ClusterPoints p:arrow_candidate
+             ) {
+            if(!p.isNoise){
+                Imgproc.circle(mat, p.point, 8, new Scalar(255-p.cluster*50, 0, 255-p.cluster*50), -1);
+
+            }
+        }
+
         Imgproc.cvtColor(arrow_mask, roi_mask, Imgproc.COLOR_GRAY2BGR);
 
-        return roi_mask;
+        return mat;
     }
 
     /* Input C8U1, Output C8U1 */
-    private List<Point> find_arrow(Mat mat) {
-        List<MatOfPoint> contours = new ArrayList<>();
+    private void find_arrow(Mat mat) {
+        ArrayList<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
         Imgproc.findContours(mat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        double maxArea = 0;
+        int arrows_number = 0;
         MatOfPoint max_contour = new MatOfPoint();
         Iterator<MatOfPoint> iterator = contours.iterator();
         while (iterator.hasNext()){
             MatOfPoint contour = iterator.next();
             double area = Imgproc.contourArea(contour);
             if(area < 2500){
+                arrows_number++;
                 Rect rect = Imgproc.boundingRect(contour);
-
-
+                arrow_candidate.add(new ClusterPoints(rect.x + rect.width/2, rect.y + rect.height/2));
             }
         }
-//        if (rect.height>50 || rect.width>50){
-//            this.arrow_pos = null;
-//        }
-//        else {
-//            Imgproc.rectangle(mat, rect, new Scalar(255), -1);
-//            this.arrow_pos = new Point(rect.x + rect.width/2, rect.y + rect.height/2);
-//        }
+        arrow_candidate_number.add(arrows_number);
+
+        dbscan.process(arrow_candidate);
+
+        // remove old candidates in oldest frame
+        if (arrow_candidate_number.size()>30){
+            int number = arrow_candidate_number.get(0);
+            arrow_candidate_number.remove(0);
+            for (int i = 0; i < number; i++) {
+                arrow_candidate.remove(0);
+            }
+        }
     }
+
 
     /* Input:
         src         : C8U3

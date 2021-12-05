@@ -8,17 +8,7 @@ import java.util.ArrayList;
  * Created by Jason on 2016/4/17.
  */
 public class DBScan {
-    class ClusterPoints {
-        boolean visited = false;
-        boolean isNoise = false;
-        Point point;
-        int cluster = 0;
 
-        public double getDistance(Point point) {
-            return Math.sqrt((this.point.x-point.x)*(this.point.x-point.x)+(this.point.y-point.y)*(this.point.y-point.y));
-        }
-
-    }
 
     private double radius;
     private int minPts;
