@@ -63,35 +63,35 @@ public class Cvfun {
         arrow_mask = get_arrow_mask(mat, roi_mask);
 
         find_arrow(arrow_mask);
-
-        if(this.arrow_pos != null) {
-            this.arrow_candidate.add(this.arrow_pos);
-            if(this.arrow_candidate.size()>20) {
-                this.arrow_candidate.remove(0);
-            }
-            if(this.arrow_candidate.size() > 2){
-                Mat mp = Converters.vector_Point_to_Mat(this.arrow_candidate);
-                mp.convertTo(mp, CvType.CV_32F);
-
-                Mat labels = new Mat();
-                TermCriteria criteria = new TermCriteria(TermCriteria.COUNT, 100, 1);
-                Mat centers = new Mat();
-                kmeans(mp, 2, labels, criteria, 1, Core.KMEANS_PP_CENTERS, centers);
-                Point c;
-                c = new Point(centers.get(0,0)[0], centers.get(0,1)[0]);
-                Imgproc.circle(mat, c, 15, new Scalar(255, 0, 255), -1);
-                c = new Point(centers.get(1,0)[0], centers.get(1,1)[0]);
-                Imgproc.circle(mat, c, 15, new Scalar(255, 0, 255), -1);
-
-            }
-        }
+//
+//        if(this.arrow_pos != null) {
+//            this.arrow_candidate.add(this.arrow_pos);
+//            if(this.arrow_candidate.size()>20) {
+//                this.arrow_candidate.remove(0);
+//            }
+//            if(this.arrow_candidate.size() > 2){
+//                Mat mp = Converters.vector_Point_to_Mat(this.arrow_candidate);
+//                mp.convertTo(mp, CvType.CV_32F);
+//
+//                Mat labels = new Mat();
+//                TermCriteria criteria = new TermCriteria(TermCriteria.COUNT, 100, 1);
+//                Mat centers = new Mat();
+//                kmeans(mp, 2, labels, criteria, 1, Core.KMEANS_PP_CENTERS, centers);
+//                Point c;
+//                c = new Point(centers.get(0,0)[0], centers.get(0,1)[0]);
+//                Imgproc.circle(mat, c, 15, new Scalar(255, 0, 255), -1);
+//                c = new Point(centers.get(1,0)[0], centers.get(1,1)[0]);
+//                Imgproc.circle(mat, c, 15, new Scalar(255, 0, 255), -1);
+//
+//            }
+//        }
         Imgproc.cvtColor(arrow_mask, roi_mask, Imgproc.COLOR_GRAY2BGR);
 
-        return mat;
+        return roi_mask;
     }
 
     /* Input C8U1, Output C8U1 */
-    private void find_arrow(Mat mat) {
+    private List<Point> find_arrow(Mat mat) {
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
         Imgproc.findContours(mat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -102,19 +102,19 @@ public class Cvfun {
         while (iterator.hasNext()){
             MatOfPoint contour = iterator.next();
             double area = Imgproc.contourArea(contour);
-            if(area > maxArea){
-                maxArea = area;
-                max_contour = contour;
+            if(area < 2500){
+                Rect rect = Imgproc.boundingRect(contour);
+
+
             }
         }
-        Rect rect = Imgproc.boundingRect(max_contour);
-        if (rect.height>50 || rect.width>50){
-            this.arrow_pos = null;
-        }
-        else {
-            Imgproc.rectangle(mat, rect, new Scalar(255), -1);
-            this.arrow_pos = new Point(rect.x + rect.width/2, rect.y + rect.height/2);
-        }
+//        if (rect.height>50 || rect.width>50){
+//            this.arrow_pos = null;
+//        }
+//        else {
+//            Imgproc.rectangle(mat, rect, new Scalar(255), -1);
+//            this.arrow_pos = new Point(rect.x + rect.width/2, rect.y + rect.height/2);
+//        }
     }
 
     /* Input:
