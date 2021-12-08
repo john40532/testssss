@@ -163,7 +163,7 @@ public class OpencvCamera extends Activity implements CameraBridgeViewBase.CvCam
             Rect roi = new Rect((int)roiRec.x, (int)roiRec.y, roiHeight, roiWidth);
             Mat mRGBA_roi = new Mat(mRGBA, roi);
 
-            mRGBA_roi = cvfun.img_proc(mRGBA_roi);
+            mRGBA_roi = cvfun.img_proc(mRGBA_roi, null);
             mRGBA_roi.copyTo(new Mat(mRGBA, roi));
         }
         else {

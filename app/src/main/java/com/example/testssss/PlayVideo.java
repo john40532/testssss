@@ -36,6 +36,7 @@ public class PlayVideo extends AppCompatActivity {
     private VideoCapture vc;
     private File videoFile = new File("/storage/3638-6538/Download/video1.avi");
     private Cvfun cvfun;
+    private PlaySound ps;
 
 
     BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(this) {
@@ -45,6 +46,7 @@ public class PlayVideo extends AppCompatActivity {
                 case LoaderCallbackInterface.SUCCESS:{
 //                    cameraBridgeViewBase.enableView();
                     cvfun = new Cvfun();
+
                 }
                 default:{
                     super.onManagerConnected(status);
@@ -59,6 +61,7 @@ public class PlayVideo extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         ActivityCompat.requestPermissions(PlayVideo.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},1);
         setContentView(R.layout.activity_play_video);
+        ps = new PlaySound(this);
 
         initViews();
 
@@ -168,7 +171,7 @@ public class PlayVideo extends AppCompatActivity {
         if (vc.read(mFrame)) {
             frame_number++;
             Imgproc.cvtColor(mFrame, mFrame, Imgproc.COLOR_RGB2BGR);
-            mFrame = cvfun.img_proc(mFrame);
+            mFrame = cvfun.img_proc(mFrame, ps);
             Imgproc.putText(mFrame, String.valueOf(frame_number), new Point(30,150), Imgproc.FONT_HERSHEY_COMPLEX, 2, new Scalar(0, 255, 255), 1);
             Imgproc.cvtColor(mFrame, mFrame, Imgproc.COLOR_BGR2RGB);
 

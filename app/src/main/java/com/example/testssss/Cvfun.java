@@ -61,7 +61,7 @@ public class Cvfun {
     public void reset(){
         frame_initilized = false;
     }
-    public Mat img_proc(Mat mat) {
+    public Mat img_proc(Mat mat, PlaySound ps) {
         Mat roi_mask = Mat.zeros(mat.size(), CvType.CV_8UC1);
         Mat arrow_mask;
 
@@ -84,6 +84,7 @@ public class Cvfun {
                         region = target.getArrowRegion(ap);
                         value = target.getArrowScore(ap);
                         ap.setLock();
+                        ps.play(region, value);
                     }
                 }
             }
