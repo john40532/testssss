@@ -1,5 +1,6 @@
 package com.example.testssss;
 
+import org.opencv.core.Core;
 import org.opencv.core.Point;
 
 import java.util.ArrayList;
@@ -12,14 +13,17 @@ public class DBScan {
 
     private double radius;
     private int minPts;
+    private int time_span;
+    public int cluster_counts = 0;
 
-    public DBScan(double radius,int minPts) {
+    public DBScan(double radius, int minPts, int time_span) {
         this.radius = radius;
         this.minPts = minPts;
+        this.time_span = time_span;
     }
 
-    public void process(ArrayList<ClusterPoints> points) {
-        int cluster = 1;
+    public int process(ArrayList<ClusterPoints> points) {
+        int cluster = 0;
         for(ClusterPoints element : points) {
             //choose an unvisited point
             if (!element.visited) {
@@ -29,7 +33,9 @@ public class DBScan {
                 if (adjacentPoints != null && adjacentPoints.size() < minPts) {
                     element.isNoise = true;
                 } else {
+                    cluster++;
                     element.cluster = cluster;
+
                     for (int i = 0; i < adjacentPoints.size(); i++) {
                         ClusterPoints adjacentPoint = adjacentPoints.get(i);
                         //only check unvisited point, cause only unvisited have the chance to add new adjacent points
@@ -41,6 +47,8 @@ public class DBScan {
                                 adjacentPoints.addAll(adjacentAdjacentPoints);
                             }
                         }
+
+
                         //add point which doest not belong to any cluster
                         if (adjacentPoint.cluster == 0) {
                             adjacentPoint.cluster = cluster;
@@ -50,17 +58,19 @@ public class DBScan {
                             }
                         }
                     }
-                    cluster++;
                 }
             }
         }
+        this.cluster_counts = cluster;
+        return this.cluster_counts;
     }
+
 
     private ArrayList<ClusterPoints> getAdjacentPoints(ClusterPoints centerPoint,ArrayList<ClusterPoints> points) {
         ArrayList<ClusterPoints> adjacentPoints = new ArrayList<ClusterPoints>();
         for (ClusterPoints p:points) {
             //include centerPoint itself
-            double distance = centerPoint.getDistance(p.point);
+            double distance = getDistance(centerPoint.point, p.point);
             if (distance<=radius) {
                 adjacentPoints.add(p);
             }
@@ -68,5 +78,8 @@ public class DBScan {
         return adjacentPoints;
     }
 
+    public double getDistance(Point pt1, Point pt2) {
+        return Math.sqrt(Math.pow((pt1.x-pt2.x), 2) + Math.pow((pt1.y-pt2.y),2));
+    }
 
 }

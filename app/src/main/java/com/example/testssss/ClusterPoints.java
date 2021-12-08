@@ -12,7 +12,4 @@ public class ClusterPoints {
         this.point = new Point(x, y);
     }
 
-    public double getDistance(Point point) {
-        return Math.sqrt((this.point.x-point.x)*(this.point.x-point.x)+(this.point.y-point.y)*(this.point.y-point.y));
-    }
 }
