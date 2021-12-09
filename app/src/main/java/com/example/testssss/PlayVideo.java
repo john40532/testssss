@@ -73,15 +73,34 @@ public class PlayVideo extends AppCompatActivity {
 
 
     private ImageView tv1;
+    private Button colorMask;
+    private Button roi;
+    private Button arrowMask;
+    private Button full;
+    private Button mog;
+    private Button canny;
+
 
     private void initViews()
     {
         tv1 = (ImageView) findViewById(R.id.videoView2);
+        colorMask = (Button) findViewById(R.id.colorMask);
+        roi = (Button) findViewById(R.id.roi);
+        arrowMask = (Button) findViewById(R.id.arrowMask);
+        full = (Button) findViewById(R.id.full);
+        mog = (Button) findViewById(R.id.mog);
+        canny = (Button) findViewById(R.id.canny);
     }
 
     private void setListensers()
     {
         tv1.setOnClickListener(tv1NextFrame);
+        colorMask.setOnClickListener(colorMaskListener);
+        roi.setOnClickListener(roiListener);
+        arrowMask.setOnClickListener(arrowMaskListener);
+        full.setOnClickListener(fullListener);
+        mog.setOnClickListener(mogListener);
+        canny.setOnClickListener(cannyListener);
     }
 
     // Create the Handler object (on the main thread by default)
@@ -103,6 +122,43 @@ public class PlayVideo extends AppCompatActivity {
     private View.OnClickListener tv1NextFrame = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+        }
+    };
+
+    private View.OnClickListener colorMaskListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            cvfun.setDebugOutput(Cvfun.DebugIndex.COLORMASK);
+        }
+    };
+    private View.OnClickListener roiListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            cvfun.setDebugOutput(Cvfun.DebugIndex.ROI);
+        }
+    };
+    private View.OnClickListener arrowMaskListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            cvfun.setDebugOutput(Cvfun.DebugIndex.ARROWMASK);
+        }
+    };
+    private View.OnClickListener fullListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            cvfun.setDebugOutput(Cvfun.DebugIndex.FULL);
+        }
+    };
+    private View.OnClickListener mogListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            cvfun.setDebugOutput(Cvfun.DebugIndex.MOG);
+        }
+    };
+    private View.OnClickListener cannyListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            cvfun.setDebugOutput(Cvfun.DebugIndex.CANNY);
         }
     };
 
