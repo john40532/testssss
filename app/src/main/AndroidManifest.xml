@@ -17,10 +17,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Testssss">
         <activity
-            android:name=".OpencvCamera"
+            android:name=".OpencvCameraActivity"
             android:exported="true" />
         <activity
-            android:name=".PlayVideo"
+            android:name=".PlayVideoActivity"
             android:exported="true" />
         <activity
             android:name=".MainActivity"

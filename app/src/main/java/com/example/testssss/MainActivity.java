@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
                 flag = true;
                 open_camera.setText("camera");
             }
-            startActivity(new Intent(MainActivity.this, OpencvCamera.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+            startActivity(new Intent(MainActivity.this, OpencvCameraActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
         }
     };
 
@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onClick(View view) {
-            startActivity(new Intent(MainActivity.this, PlayVideo.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+            startActivity(new Intent(MainActivity.this, PlayVideoActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
         }
     };
 

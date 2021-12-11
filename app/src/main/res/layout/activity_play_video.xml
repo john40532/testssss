@@ -7,12 +7,10 @@
     android:orientation="vertical">
 
 
-
-
-    <ImageView
+    <com.example.testssss.PlayVideo
         android:id="@+id/videoView2"
         android:layout_width="match_parent"
-        android:layout_height="546dp" />
+        android:layout_height="568dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -68,4 +66,10 @@
             android:text="canny" />
 
     </LinearLayout>
+
+    <Button
+        android:id="@+id/changeVideo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Change Video" />
 </LinearLayout>

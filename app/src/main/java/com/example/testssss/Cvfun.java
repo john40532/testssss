@@ -50,9 +50,13 @@ import java.util.Random;
 
 public class Cvfun {
     private enum ColorMask {GOLDEN, ORANGE, BLUE, BLACK, WHITE}
+
     public enum DebugIndex {COLORMASK, ROI, ARROWMASK, MOG, CANNY, FULL}
+
+    private DebugIndex debugOutputTemp = DebugIndex.FULL;
     private DebugIndex debugOutput = DebugIndex.FULL;
     private Mat debugMat = new Mat();
+    private boolean thread_lock = false;
 
     private BackgroundSubtractorMOG2 mog = Video.createBackgroundSubtractorMOG2(500, 20, false);
     private ArrayList<ClusterPoints> arrow_candidate = new ArrayList<>();
@@ -65,33 +69,37 @@ public class Cvfun {
     private DBScan dbscan = new DBScan(5, 25, 30);
 
     public void setDebugOutput(DebugIndex index) {
-        this.debugOutput = index;
+        this.debugOutputTemp = index;
     }
 
-    public void reset(){
+    public void reset() {
         frame_initilized = false;
     }
-    public Mat img_proc(Mat mat, PlaySound ps) {
+
+    public Mat img_proc(Mat src, PlaySound ps) {
+        Mat mat = new Mat();
+        src.copyTo(mat);
         Mat roi_mask = Mat.zeros(mat.size(), CvType.CV_8UC1);
         Mat arrow_mask;
+        debugOutput = this.debugOutputTemp;
 
 
         ArrayList<Target> tg = get_target_region(mat);
-        for (Target target: tg) {
-            Imgproc.circle(mat, target.getTargetCenter(), (int)target.getTargetRadius(), new Scalar(255, 255, 0), 3);
-            Imgproc.circle(roi_mask, target.getTargetCenter(), (int)target.getTargetRadius(), new Scalar(255), -1);
+        for (Target target : tg) {
+            Imgproc.circle(mat, target.getTargetCenter(), (int) target.getTargetRadius(), new Scalar(255, 255, 0), 3);
+            Imgproc.circle(roi_mask, target.getTargetCenter(), (int) target.getTargetRadius(), new Scalar(255), -1);
         }
         if (debugOutput == DebugIndex.ROI) debugMat = roi_mask;
 
-        arrow_mask = get_arrow_mask(mat, roi_mask);
+        arrow_mask = get_arrow_mask(src, roi_mask);
 
         find_arrow(arrow_mask);
 
-        for (ArrowPoint ap:apList) {
+        for (ArrowPoint ap : apList) {
             int region = 0;
             int value = 0;
             if (!ap.isLocked()) {
-                for (Target target: tg) {
+                for (Target target : tg) {
                     if (target.inTarget(ap)) {
                         region = target.getArrowRegion(ap);
                         value = target.getArrowScore(ap);
@@ -99,26 +107,24 @@ public class Cvfun {
                         ps.play(region, value);
                     }
                 }
-            }
-            else {
+            } else {
                 region = ap.getRegion();
                 value = ap.getValue();
             }
-            String string = new String(""+region+"."+value);
+            String string = new String("" + region + "." + value);
             Imgproc.circle(mat, ap.arrow_position, 3, new Scalar(255, 0, 255), -1);
             putText(mat, string, ap.arrow_position, FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 255, 255));
 
         }
 
         if (debugOutput == DebugIndex.ROI ||
-            debugOutput == DebugIndex.COLORMASK ||
-            debugOutput == DebugIndex.ARROWMASK ||
-            debugOutput == DebugIndex.CANNY ||
-            debugOutput == DebugIndex.MOG) {
+                debugOutput == DebugIndex.COLORMASK ||
+                debugOutput == DebugIndex.ARROWMASK ||
+                debugOutput == DebugIndex.CANNY ||
+                debugOutput == DebugIndex.MOG) {
             Imgproc.cvtColor(debugMat, debugMat, Imgproc.COLOR_GRAY2BGR);
             return debugMat;
-        }
-        else {
+        } else {
             return mat;
         }
     }
@@ -132,13 +138,13 @@ public class Cvfun {
 
         int arrows_number = 0;
         Iterator<MatOfPoint> iterator = contours.iterator();
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             MatOfPoint contour = iterator.next();
             double area = Imgproc.contourArea(contour);
-            if(area < 2500 && area > 50){
+            if (area < 2500 && area > 50) {
                 arrows_number++;
                 Rect rect = Imgproc.boundingRect(contour);
-                arrow_candidate.add(new ClusterPoints(rect.x + rect.width/2, rect.y + rect.height/2));
+                arrow_candidate.add(new ClusterPoints(rect.x + rect.width / 2, rect.y + rect.height / 2));
             }
         }
         arrow_candidate_number.add(arrows_number);
@@ -146,8 +152,8 @@ public class Cvfun {
 
         int detected_clusters = dbscan.process(arrow_candidate);
 
-        if (detected_clusters>0) {
-            for (ClusterPoints p :arrow_candidate) {
+        if (detected_clusters > 0) {
+            for (ClusterPoints p : arrow_candidate) {
                 if (p.cluster > 0) {
                     arrow_counter++;
                     ArrowPoint ap = new ArrowPoint(p.point, arrow_counter);
@@ -160,7 +166,7 @@ public class Cvfun {
         }
 
         // remove old candidates in oldest frame
-        if (arrow_candidate_number.size()>30){
+        if (arrow_candidate_number.size() > 30) {
             int number = arrow_candidate_number.get(0);
             arrow_candidate_number.remove(0);
             for (int i = 0; i < number; i++) {
@@ -184,28 +190,28 @@ public class Cvfun {
 
         /* Black filter */
         black_mask = get_color_mask(black_mask, ColorMask.BLACK);
-        Imgproc.erode(black_mask, black_mask, new Mat(), new Point(-1, -1), 1);
+//        Imgproc.erode(black_mask, black_mask, new Mat(), new Point(-1, -1), 1);
 
         mog.apply(black_mask, black_mask);
+        if (debugOutput == DebugIndex.MOG) black_mask.copyTo(debugMat);
         Imgproc.GaussianBlur(black_mask, black_mask, new Size(23, 23), 0);
         Imgproc.threshold(black_mask, black_mask, 100, 255, THRESH_BINARY);
-        if (debugOutput == DebugIndex.MOG) debugMat = black_mask;
 
         /* Canny filter */
         Imgproc.cvtColor(canny_mat, canny_mat, Imgproc.COLOR_BGR2GRAY);
-        Canny(canny_mat, canny_mat, 100, 180,3);
+        Canny(canny_mat, canny_mat, 100, 180, 3);
         Imgproc.dilate(canny_mat, canny_mat, new Mat(), new Point(-1, -1), 2);
 
         mog.apply(canny_mat, canny_mat);
+        if (debugOutput == DebugIndex.CANNY) canny_mat.copyTo(debugMat);
         Imgproc.GaussianBlur(canny_mat, canny_mat, new Size(23, 23), 0);
         Imgproc.threshold(canny_mat, canny_mat, 100, 255, THRESH_BINARY);
-        if (debugOutput == DebugIndex.CANNY) debugMat = canny_mat;
 
 //      May try addWeighted();
         Core.subtract(black_mask, canny_mat, output_mat);
 
         Core.bitwise_and(output_mat, roi_mask, output_mat);
-        if (debugOutput == DebugIndex.ARROWMASK) debugMat = output_mat;
+        if (debugOutput == DebugIndex.ARROWMASK) output_mat.copyTo(debugMat);
 
         return output_mat;
     }
@@ -220,17 +226,17 @@ public class Cvfun {
 
         Imgproc.GaussianBlur(mat, mat, new Size(21, 21), 0);
 
-        mat = get_color_mask(mat, ColorMask.ORANGE);
+        mat = get_color_mask(mat, ColorMask.BLUE);
         Imgproc.dilate(mat, mat, new Mat(), new Point(-1, -1), 5);
         Imgproc.erode(mat, mat, new Mat(), new Point(-1, -1), 5);
-        if (debugOutput == DebugIndex.COLORMASK) debugMat = mat;
+        if (debugOutput == DebugIndex.COLORMASK) mat.copyTo(debugMat);
 
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
         Imgproc.findContours(mat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
         Iterator<MatOfPoint> iterator = contours.iterator();
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             Point centers = new Point();
             float[] radius = new float[1];
             MatOfPoint contour = iterator.next();
@@ -272,7 +278,7 @@ public class Cvfun {
                 Core.bitwise_or(orange_mask0, orange_mask1, circle);
                 break;
             case BLUE:
-                Scalar lower_blue = new Scalar(90, 150, 180);
+                Scalar lower_blue = new Scalar(90, 190, 100);
                 Scalar upper_blue = new Scalar(130, 255, 255);
                 Core.inRange(mat, lower_blue, upper_blue, circle);
                 break;
@@ -283,7 +289,7 @@ public class Cvfun {
                 break;
             case WHITE:
                 Scalar lower_white = new Scalar(0, 0, 180);
-                Scalar upper_white = new Scalar(179,100,255);
+                Scalar upper_white = new Scalar(179, 100, 255);
                 Core.inRange(mat, lower_white, upper_white, circle);
                 break;
         }
@@ -354,8 +360,8 @@ public class Cvfun {
         List<Point> ptsEdges = new ArrayList<>();
         for (int j = 0; j < edgeMask.rows(); j++) {
             for (int i = 0; i < edgeMask.cols(); i++) {
-                if(edgeMask.get(j, i)[0]>0){
-                    ptsEdges.add(new Point(i,j));
+                if (edgeMask.get(j, i)[0] > 0) {
+                    ptsEdges.add(new Point(i, j));
                 }
             }
         }
@@ -365,7 +371,7 @@ public class Cvfun {
         MatOfPoint2f asdf = new MatOfPoint2f(pointarray);
         RotatedRect result = Imgproc.fitEllipse(asdf);
         Mat output = new Mat(mat.size(), CvType.CV_8UC1, new Scalar(0));
-        ellipse(output, result, new Scalar(255),-1);
+        ellipse(output, result, new Scalar(255), -1);
 
         return output;
     }

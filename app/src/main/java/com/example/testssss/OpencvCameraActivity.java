@@ -1,13 +1,11 @@
 package com.example.testssss;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
-import android.graphics.Canvas;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceView;
@@ -15,20 +13,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-import org.opencv.BuildConfig;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.core.Point;
-import org.opencv.core.Range;
 import org.opencv.core.Rect;
 import org.opencv.imgproc.Imgproc;
 
-public class OpencvCamera extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+public class OpencvCameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
     private static final String TAG = "MainActivity";
     Mat mRGBA;
     Mat mRGBAT;
@@ -71,7 +66,7 @@ public class OpencvCamera extends Activity implements CameraBridgeViewBase.CvCam
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivityCompat.requestPermissions(OpencvCamera.this, new String[]{Manifest.permission.CAMERA},1);
+        ActivityCompat.requestPermissions(OpencvCameraActivity.this, new String[]{Manifest.permission.CAMERA},1);
         setContentView(R.layout.activity_opencv_camera);
         initViews();
 
