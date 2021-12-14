@@ -9,10 +9,13 @@ import static org.opencv.core.Core.kmeans;
 import static org.opencv.imgproc.Imgproc.Canny;
 import static org.opencv.imgproc.Imgproc.FONT_HERSHEY_SIMPLEX;
 import static org.opencv.imgproc.Imgproc.HoughLinesP;
+import static org.opencv.imgproc.Imgproc.INTER_NEAREST;
 import static org.opencv.imgproc.Imgproc.THRESH_BINARY;
+import static org.opencv.imgproc.Imgproc.WARP_INVERSE_MAP;
 import static org.opencv.imgproc.Imgproc.ellipse;
 import static org.opencv.imgproc.Imgproc.erode;
 import static org.opencv.imgproc.Imgproc.getStructuringElement;
+import static org.opencv.imgproc.Imgproc.goodFeaturesToTrack;
 import static org.opencv.imgproc.Imgproc.morphologyEx;
 import static org.opencv.imgproc.Imgproc.putText;
 import static org.opencv.imgproc.Imgproc.resize;
@@ -22,9 +25,12 @@ import android.util.Log;
 
 import androidx.compose.ui.graphics.DegreesKt;
 
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Core;
+import org.opencv.core.MatOfByte;
+import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -58,13 +64,13 @@ public class Cvfun {
     private Mat debugMat = new Mat();
     private boolean thread_lock = false;
 
-    private BackgroundSubtractorMOG2 mog = Video.createBackgroundSubtractorMOG2(500, 20, false);
+    private BackgroundSubtractorMOG2 mog = Video.createBackgroundSubtractorMOG2(500, 5, false);
     private ArrayList<ClusterPoints> arrow_candidate = new ArrayList<>();
     private ArrayList<Integer> arrow_candidate_number = new ArrayList<>();
     private ArrayList<ArrowPoint> apList = new ArrayList<>();
 
     int arrow_counter = 0;
-    private Mat prev_frame = new Mat();
+    private ArrayList<Target> prev_tg = new ArrayList<>();
     private boolean frame_initilized = false;
     private DBScan dbscan = new DBScan(5, 25, 30);
 
@@ -77,21 +83,24 @@ public class Cvfun {
     }
 
     public Mat img_proc(Mat src, PlaySound ps) {
+        debugOutput = this.debugOutputTemp;
         Mat mat = new Mat();
         src.copyTo(mat);
+        ArrayList<Target> tg = get_target_region(mat);
+
+        fixTargetTranslate(mat, tg, prev_tg);
+        prev_tg = tg;
+
         Mat roi_mask = Mat.zeros(mat.size(), CvType.CV_8UC1);
         Mat arrow_mask;
-        debugOutput = this.debugOutputTemp;
 
-
-        ArrayList<Target> tg = get_target_region(mat);
         for (Target target : tg) {
             Imgproc.circle(mat, target.getTargetCenter(), (int) target.getTargetRadius(), new Scalar(255, 255, 0), 3);
             Imgproc.circle(roi_mask, target.getTargetCenter(), (int) target.getTargetRadius(), new Scalar(255), -1);
         }
         if (debugOutput == DebugIndex.ROI) debugMat = roi_mask;
 
-        arrow_mask = get_arrow_mask(src, roi_mask);
+        arrow_mask = get_arrow_mask(mat, roi_mask);
 
         find_arrow(arrow_mask);
 
@@ -122,11 +131,34 @@ public class Cvfun {
                 debugOutput == DebugIndex.ARROWMASK ||
                 debugOutput == DebugIndex.CANNY ||
                 debugOutput == DebugIndex.MOG) {
-            Imgproc.cvtColor(debugMat, debugMat, Imgproc.COLOR_GRAY2BGR);
+            if (debugMat.type() == CvType.CV_8UC1)
+                Imgproc.cvtColor(debugMat, debugMat, Imgproc.COLOR_GRAY2BGR);
             return debugMat;
         } else {
             return mat;
         }
+    }
+
+    private void fixTargetTranslate(Mat src, ArrayList<Target> curr_target, ArrayList<Target> prev_target) {
+        if (curr_target.size()!=prev_target.size())
+            return;
+        double sum_x=0, sum_y=0;
+        for (int i = 0; i < curr_target.size(); i++) {
+            sum_x += curr_target.get(i).getTargetCenter().x - prev_target.get(i).getTargetCenter().x;
+            sum_y += curr_target.get(i).getTargetCenter().y - prev_target.get(i).getTargetCenter().y;
+        }
+        double offsetX = sum_x/curr_target.size();
+        double offsetY = sum_y/curr_target.size();
+
+        for (int i = 0; i < curr_target.size(); i++) {
+            Point currentTargetCenter = curr_target.get(i).getTargetCenter();
+            double update_x = currentTargetCenter.x - offsetX;
+            double update_y = currentTargetCenter.y - offsetY;
+            curr_target.get(i).setTargetCenter(new Point(update_x, update_y));
+        }
+        Mat M = new Mat( 2, 3, CvType.CV_32F );
+        M.put(0,0, 1,0,-offsetX, 0,1,-offsetY);
+        warpAffine(src, src, M, src.size());
     }
 
     /* Input C8U1, Output C8U1 */
@@ -193,24 +225,24 @@ public class Cvfun {
 //        Imgproc.erode(black_mask, black_mask, new Mat(), new Point(-1, -1), 1);
 
         mog.apply(black_mask, black_mask);
-        if (debugOutput == DebugIndex.MOG) black_mask.copyTo(debugMat);
-        Imgproc.GaussianBlur(black_mask, black_mask, new Size(23, 23), 0);
+        Imgproc.GaussianBlur(black_mask, black_mask, new Size(15, 15), 0);
         Imgproc.threshold(black_mask, black_mask, 100, 255, THRESH_BINARY);
+        if (debugOutput == DebugIndex.MOG) black_mask.copyTo(debugMat);
 
         /* Canny filter */
         Imgproc.cvtColor(canny_mat, canny_mat, Imgproc.COLOR_BGR2GRAY);
         Canny(canny_mat, canny_mat, 100, 180, 3);
+        if (debugOutput == DebugIndex.CANNY) canny_mat.copyTo(debugMat);
         Imgproc.dilate(canny_mat, canny_mat, new Mat(), new Point(-1, -1), 2);
 
-        mog.apply(canny_mat, canny_mat);
-        if (debugOutput == DebugIndex.CANNY) canny_mat.copyTo(debugMat);
+//        mog.apply(canny_mat, canny_mat);
         Imgproc.GaussianBlur(canny_mat, canny_mat, new Size(23, 23), 0);
         Imgproc.threshold(canny_mat, canny_mat, 100, 255, THRESH_BINARY);
 
 //      May try addWeighted();
-        Core.subtract(black_mask, canny_mat, output_mat);
+//        Core.subtract(black_mask, canny_mat, output_mat);
 
-        Core.bitwise_and(output_mat, roi_mask, output_mat);
+        Core.bitwise_and(black_mask, roi_mask, output_mat);
         if (debugOutput == DebugIndex.ARROWMASK) output_mat.copyTo(debugMat);
 
         return output_mat;
@@ -272,7 +304,6 @@ public class Cvfun {
                 Scalar upper_orange_1 = new Scalar(180, 255, 255);
                 Mat orange_mask0 = new Mat(mat.size(), CvType.CV_8UC1);
                 Mat orange_mask1 = new Mat(mat.size(), CvType.CV_8UC1);
-                Mat orange_mask = new Mat(mat.size(), CvType.CV_8UC1);
                 Core.inRange(mat, lower_orange_0, upper_orange_0, orange_mask0);
                 Core.inRange(mat, lower_orange_1, upper_orange_1, orange_mask1);
                 Core.bitwise_or(orange_mask0, orange_mask1, circle);

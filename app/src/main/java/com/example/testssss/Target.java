@@ -5,9 +5,9 @@ import android.util.Log;
 import org.opencv.core.Point;
 
 public class Target {
-    Point center = new Point(0,0);
-    double radius = 100;
-    int rings;
+    private Point center = new Point(0,0);
+    private double radius = 100;
+    private int rings;
 
     public Target(Point center, double radius, int rings) {
         this.center = center;
@@ -71,6 +71,10 @@ public class Target {
 
     public Point getTargetCenter() {
         return this.center;
+    }
+
+    public void setTargetCenter(Point point) {
+        this.center = point.clone();
     }
 
     public double getTargetRadius() {
