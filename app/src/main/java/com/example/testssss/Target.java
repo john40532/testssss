@@ -16,7 +16,7 @@ public class Target {
     }
 
     public boolean inTarget(ArrowPoint arrow) {
-        Point p = cartesian2polar(arrow.arrow_position);
+        Point p = cartesian2polar(arrow.avg_arrow_position);
         double distance = p.x;
         if (distance<radius)    return true;
         else                    return false;
@@ -24,7 +24,7 @@ public class Target {
 
     public int getArrowScore(ArrowPoint arrow) {
         if (!arrow.isLocked()) {
-            Point p = cartesian2polar(arrow.arrow_position);
+            Point p = cartesian2polar(arrow.avg_arrow_position);
             double distance = p.x;
             int value = 10 - (int)Math.floor(distance*(rings)/this.radius);
             arrow.setValue(value);
@@ -37,7 +37,7 @@ public class Target {
 
     public int getArrowRegion(ArrowPoint arrow) {
         if (!arrow.isLocked()) {
-            Point p = cartesian2polar(arrow.arrow_position);
+            Point p = cartesian2polar(arrow.avg_arrow_position);
             int phase = (int)(p.y+180);
             int region;
             if (phase>=15 && phase<45)          region =  10;
@@ -53,7 +53,6 @@ public class Target {
             else if (phase>=315 && phase<345)   region =  8;
             else                                region =  9;
             arrow.setRegion(region);
-            Log.d("degg", "setR"+region);
             return region;
         }
         else {

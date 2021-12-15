@@ -74,7 +74,7 @@ public class Cvfun {
     int arrow_counter = 0;
     private ArrayList<Target> prev_tg = new ArrayList<>();
     private boolean frame_initilized = false;
-    private DBScan dbscan = new DBScan(5, 25, 30);
+    private DBScan dbscan = new DBScan(5, 25);
 
     public void setDebugOutput(DebugIndex index) {
         this.debugOutputTemp = index;
@@ -114,17 +114,24 @@ public class Cvfun {
                     if (target.inTarget(ap)) {
                         region = target.getArrowRegion(ap);
                         value = target.getArrowScore(ap);
-                        ap.setLock();
-                        ps.play(region, value);
+                        ap.ap_lifespan--;
                     }
+                }
+                if (ap.ap_lifespan<0) {
+                    ap.setLock();
                 }
             } else {
                 region = ap.getRegion();
                 value = ap.getValue();
             }
+
+            if (!ap.playSound) {
+                ap.playSound = true;
+                ps.play(region, value);
+            }
             String string = new String("" + region + "." + value);
-            Imgproc.circle(mat, ap.arrow_position, 3, new Scalar(255, 0, 255), -1);
-            putText(mat, string, ap.arrow_position, FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 255, 255));
+            Imgproc.circle(mat, ap.avg_arrow_position, 3, new Scalar(255, 0, 255), -1);
+            putText(mat, string, ap.avg_arrow_position, FONT_HERSHEY_SIMPLEX, 1, new Scalar(255, 255, 255));
 
         }
 
@@ -175,38 +182,45 @@ public class Cvfun {
         while (iterator.hasNext()) {
             MatOfPoint contour = iterator.next();
             double area = Imgproc.contourArea(contour);
+            Log.d("degg", "area:"+area);
             if (area < 2500 && area > 50) {
                 arrows_number++;
-                Rect rect = Imgproc.boundingRect(contour);
-                arrow_candidate.add(new ClusterPoints(rect.x + rect.width / 2, rect.y + rect.height / 2));
+                double density = 0.01;
+                for (Point p: createPolygonPoint(contour, 10)) {
+                    arrow_candidate.add(new ClusterPoints(p));
+                    Imgproc.circle(mat, p, 2, new Scalar(100), -1);
+                }
+
             }
         }
+        if (debugOutput == DebugIndex.ARROWMASK) mat.copyTo(debugMat);
         arrow_candidate_number.add(arrows_number);
 
 
-        int detected_clusters = dbscan.process(arrow_candidate);
+        dbscan.process(arrow_candidate, apList);
 
-        if (detected_clusters > 0) {
-            for (ClusterPoints p : arrow_candidate) {
-                if (p.cluster > 0) {
-                    arrow_counter++;
-                    ArrowPoint ap = new ArrowPoint(p.point, arrow_counter);
-                    apList.add(ap);
-                    arrow_candidate.clear();
-                    arrow_candidate_number.clear();
-                    break;
-                }
-            }
+    }
+
+    private ArrayList<Point> createPolygonPoint(MatOfPoint contour, int samples_number) {
+
+        ArrayList<Point> samplesList = new ArrayList<>();
+        Random random = new Random();
+        int counter = 0;
+
+        while (counter < samples_number) {
+            int listSize = (int) contour.size().height;
+            int startIndex = random.nextInt(listSize);
+            int endIndex = random.nextInt(listSize);
+            Point startP = contour.toArray()[startIndex];
+            Point endP = contour.toArray()[endIndex];
+
+            double ratio = random.nextFloat();
+            Point samplePoint = new Point(endP.x * ratio - (ratio - 1) * startP.x, endP.y * ratio - (ratio - 1) * startP.y);
+            samplesList.add(samplePoint);
+            counter++;
         }
 
-        // remove old candidates in oldest frame
-        if (arrow_candidate_number.size() > 30) {
-            int number = arrow_candidate_number.get(0);
-            arrow_candidate_number.remove(0);
-            for (int i = 0; i < number; i++) {
-                arrow_candidate.remove(0);
-            }
-        }
+        return samplesList;
     }
 
 
@@ -236,12 +250,11 @@ public class Cvfun {
         mogr.apply(rMask, rMask);
         Imgproc.GaussianBlur(rMask, rMask, new Size(31, 31), 0);
 
-        Core.add(bMask, gMask, output_mat);
-        Core.add(output_mat, rMask, output_mat);
+        Core.addWeighted(bMask, 1, gMask, 1, -50, output_mat);
+        Core.addWeighted(output_mat, 1, rMask, 1, -50, output_mat);
         Imgproc.threshold(output_mat, output_mat, 200, 255, THRESH_BINARY);
         Core.bitwise_and(output_mat, roi_mask, output_mat);
 
-        if (debugOutput == DebugIndex.ARROWMASK) output_mat.copyTo(debugMat);
 
         return output_mat;
     }
