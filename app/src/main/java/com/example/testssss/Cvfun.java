@@ -270,9 +270,8 @@ public class Cvfun {
         Imgproc.GaussianBlur(mat, mat, new Size(21, 21), 0);
 
         mat = get_color_mask(mat, ColorMask.BLUE);
-        Imgproc.dilate(mat, mat, new Mat(), new Point(-1, -1), 5);
-        Imgproc.erode(mat, mat, new Mat(), new Point(-1, -1), 5);
-        if (debugOutput == DebugIndex.COLORMASK) mat.copyTo(debugMat);
+        Imgproc.dilate(mat, mat, new Mat(), new Point(-1, -1), 3);
+        Imgproc.erode(mat, mat, new Mat(), new Point(-1, -1), 3);
 
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
@@ -280,20 +279,22 @@ public class Cvfun {
 
         Iterator<MatOfPoint> iterator = contours.iterator();
         while (iterator.hasNext()) {
-            Point centers = new Point();
-            float[] radius = new float[1];
             MatOfPoint contour = iterator.next();
 
             double area = Imgproc.contourArea(contour);
-            Imgproc.minEnclosingCircle(new MatOfPoint2f(contour.toArray()), centers, radius);
+            Rect rect;
+            rect = Imgproc.boundingRect(contour);
+            Imgproc.rectangle(mat, rect, new Scalar(255));
+            Imgproc.putText(mat, Double.toString(area), new Point(rect.x, rect.y), FONT_HERSHEY_SIMPLEX, 1, new Scalar(255));
 
-            if (area > 20000) {
-                Moments moments = Imgproc.moments(contour);
-                Point center = new Point((int) (moments.get_m10() / moments.get_m00()), (int) (moments.get_m01() / moments.get_m00()));
-                Target abc = new Target(center, radius[0], 5);
+            if (area > 5000) {
+                Point center = new Point(rect.x+rect.width/2, rect.y+rect.height/2);
+                double radius = (rect.width+rect.height)/4;
+                Target abc = new Target(center, radius, 5);
                 targets.add(abc);
             }
         }
+        if (debugOutput == DebugIndex.COLORMASK) mat.copyTo(debugMat);
 
         return targets;
     }
@@ -320,8 +321,8 @@ public class Cvfun {
                 Core.bitwise_or(orange_mask0, orange_mask1, dst);
                 break;
             case BLUE:
-                Scalar lower_blue = new Scalar(90, 190, 100);
-                Scalar upper_blue = new Scalar(130, 255, 255);
+                Scalar lower_blue = new Scalar(80, 130, 80);
+                Scalar upper_blue = new Scalar(140, 255, 255);
                 Core.inRange(dst, lower_blue, upper_blue, dst);
                 break;
             case BLACK:
