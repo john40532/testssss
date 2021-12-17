@@ -29,6 +29,7 @@ public class DBScan {
             if (!element.classified) {
                 //check if arrow is in existed arrows
                 for (ArrowPoint ap : arrows) {
+                    if (ap.isLocked())  continue;
                     double distance = getDistance(element.point, ap.avg_arrow_position);
                     if (distance <= 10*radius) {        //extend larger area for points into the cluster
                         ap.addPoint(element.point);

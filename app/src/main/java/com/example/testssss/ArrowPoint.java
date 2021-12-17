@@ -15,7 +15,7 @@ public class ArrowPoint {
     private int region = 0;
     private int value = 0;
     boolean playSound = false;
-    int ap_lifespan = 30;
+    int ap_lifespan = 100;
 
     public ArrowPoint() {}
 

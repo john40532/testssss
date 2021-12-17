@@ -71,7 +71,6 @@ public class Cvfun {
     private ArrayList<Integer> arrow_candidate_number = new ArrayList<>();
     private ArrayList<ArrowPoint> apList = new ArrayList<>();
 
-    int arrow_counter = 0;
     private ArrayList<Target> prev_tg = new ArrayList<>();
     private boolean frame_initilized = false;
     private DBScan dbscan = new DBScan(5, 25);
@@ -90,8 +89,10 @@ public class Cvfun {
         src.copyTo(mat);
         ArrayList<Target> tg = get_target_region(mat);
 
-        fixTargetTranslate(mat, tg, prev_tg);
-        prev_tg = tg;
+        if (tg.size()>0) {
+            fixTargetTranslate(mat, tg, prev_tg);
+            prev_tg = tg;
+        }
 
         Mat roi_mask = Mat.zeros(mat.size(), CvType.CV_8UC1);
         Mat arrow_mask;
@@ -182,7 +183,6 @@ public class Cvfun {
         while (iterator.hasNext()) {
             MatOfPoint contour = iterator.next();
             double area = Imgproc.contourArea(contour);
-            Log.d("degg", "area:"+area);
             if (area < 2500 && area > 50) {
                 arrows_number++;
                 double density = 0.01;
@@ -273,21 +273,45 @@ public class Cvfun {
         Imgproc.dilate(mat, mat, new Mat(), new Point(-1, -1), 3);
         Imgproc.erode(mat, mat, new Mat(), new Point(-1, -1), 3);
 
-        List<MatOfPoint> contours = new ArrayList<>();
+        ArrayList<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
-        Imgproc.findContours(mat, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.findContours(mat, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 
-        Iterator<MatOfPoint> iterator = contours.iterator();
-        while (iterator.hasNext()) {
-            MatOfPoint contour = iterator.next();
+        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_GRAY2BGR);
 
-            double area = Imgproc.contourArea(contour);
+        for (int i = 0; i < contours.size(); i++) {
+
+            MatOfPoint contour = contours.get(i);
+            double outerArea = Imgproc.contourArea(contour);
+            //exit if the area is under the threshold
+            if (outerArea < 5000) continue;
+
+            double[] output = hierarchy.get(0,i);
+            int upContourIndex = (int) output[3];
+            int subContourIndex = (int) output[2];
+            double subContourArea = 0;
+            //ignore the inner edge
+            if (upContourIndex != -1) {
+                continue;
+            }
+            else if (subContourIndex != -1) {
+                subContourArea = Imgproc.contourArea(contours.get(subContourIndex));
+            }
+
             Rect rect;
             rect = Imgproc.boundingRect(contour);
-            Imgproc.rectangle(mat, rect, new Scalar(255));
-            Imgproc.putText(mat, Double.toString(area), new Point(rect.x, rect.y), FONT_HERSHEY_SIMPLEX, 1, new Scalar(255));
+            double circleArea = outerArea - subContourArea;
 
-            if (area > 5000) {
+
+            if (circleArea/rect.area() < 0.44
+                && circleArea/rect.area() > 0.18
+                && rect.height > 100
+                && rect.width > 100)
+            {
+                if (debugOutput == DebugIndex.COLORMASK) {
+                    Imgproc.rectangle(mat, rect, new Scalar(255, 255, 255));
+                    Imgproc.putText(mat, Double.toString(circleArea), new Point(rect.x, rect.y), FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 0, 255));
+                }
                 Point center = new Point(rect.x+rect.width/2, rect.y+rect.height/2);
                 double radius = (rect.width+rect.height)/4;
                 Target abc = new Target(center, radius, 5);
